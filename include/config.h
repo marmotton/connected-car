@@ -1,0 +1,13 @@
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
+#define ENABLE_SLCAN
+#define SERIAL_BAUDRATE 460800
+
+#define KWH_PER_GID 0.08
+#define MOTOR_RPM_TO_KMH 0.01212
+
+#define SPEED_SMOOTHING 0.8
+#define POWER_SMOOTHING 0.8
+
+#endif
