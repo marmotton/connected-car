@@ -3,23 +3,42 @@
 #include "globals.h"
 #include "display.h"
 #include "config.h"
+#include "functions.h"
 
 #include <TFT_eSPI.h>
+#include <FS.h>
 
 void display_task( void *parameter ) {
+    SPIFFS.begin();
+
     TFT_eSPI tft = TFT_eSPI();
-    TFT_eSprite img(&tft);
+    TFT_eSprite spr_speed(&tft);
+    TFT_eSprite spr_main(&tft);
+    TFT_eSprite spr_icons(&tft);
 
     tft.init();
     tft.setRotation(3);
     tft.fillScreen( TFT_BLACK );
     
-    img.setColorDepth(8);
-    img.createSprite( TFT_HEIGHT, TFT_WIDTH );
+    spr_speed.setColorDepth(16);
+    spr_speed.createSprite( TFT_HEIGHT, 32 );
+    spr_speed.loadFont( "NotoSansBold36" );
 
-    float battery_kwh = 0;
-    float speed = 0;
-    float power = 0;
+    spr_main.setColorDepth(16);
+    spr_main.createSprite( TFT_HEIGHT, 80 );
+    spr_main.loadFont( "NotoSansBold15" );
+
+    spr_icons.setColorDepth(16);
+    spr_icons.createSprite( TFT_HEIGHT, 16 );
+    spr_icons.loadFont( "NotoSansBold15" );
+    
+
+    float battery_kwh = 22.87543;
+    float speed = 128.721;
+    float power = 78.921;
+    
+    bool log_writing = false;
+    unsigned long log_start_time = 0;
 
     int last_display_update = 0;
 
@@ -33,12 +52,21 @@ void display_task( void *parameter ) {
                     break;
 
                 case Message_name::speed_kmh:
-                    speed = SPEED_SMOOTHING * speed + (1 - SPEED_SMOOTHING) * received_msg.value_float;  // Exponential smoothing
+                    exp_smooth(&speed, received_msg.value_float, DISPLAY_SMOOTHING);
                     break;
 
                 case Message_name::battery_power_kw:
-                    power = POWER_SMOOTHING * power + (1 - POWER_SMOOTHING) * received_msg.value_float;  // Exponential smoothing
+                    exp_smooth(&power, received_msg.value_float, DISPLAY_SMOOTHING);
                     break;
+
+                case Message_name::logger_status:
+                    if (received_msg.value_status == Message_status::logger_write_started) {
+                        log_writing = true;
+                        log_start_time = millis();
+                    }
+                    else if (received_msg.value_status == Message_status::logger_write_ended) {
+                        log_writing = false;
+                    }
                 
                 default:
                     break;
@@ -48,90 +76,100 @@ void display_task( void *parameter ) {
         // Update display
         if ( millis() - last_display_update > 40 ) {
             last_display_update = millis();
-            
-            img.fillSprite( TFT_BLACK );
 
             // *******************
             // Speed display
             // *******************
-            img.setFreeFont( &FreeSansBold24pt7b );
-            img.setTextDatum( MR_DATUM );
-            img.setTextColor( TFT_WHITE );
-            img.drawNumber(speed, 85, 16);
-
-            img.setFreeFont(&FreeSans9pt7b);
-            img.setTextDatum( ML_DATUM );
-            img.drawString( "km / h", 95, 16 );
-
+            spr_speed.fillSprite( TFT_BLACK );
+            spr_speed.setTextDatum( TC_DATUM );
+            spr_speed.setTextColor( TFT_WHITE, TFT_BLACK );
+            spr_speed.drawNumber(speed, 80, 0);
 
             // *******************
             // Economy display (kWh/100km)
             // *******************
-            img.setFreeFont( &FreeSansBold12pt7b );
-            img.setTextDatum( MR_DATUM );
+            spr_main.fillSprite( TFT_BLACK );
+            spr_main.setTextDatum( MR_DATUM );
 
             // Green for charging, white for discharging
             if ( power > 0 ) {
                 // Charging
-                img.setTextColor( TFT_GREEN );
+                spr_main.setTextColor( TFT_GREEN, TFT_BLACK );
             }
             else {
-                img.setTextColor( TFT_WHITE );
+                spr_main.setTextColor( TFT_WHITE, TFT_BLACK );
             }
 
             // Do not compute economy for very low speeds (and avoid divide by 0)
             if ( speed > 1 ) {
                 float kwh_100km = power / speed * 100;
-                img.drawFloat( std::abs(kwh_100km), 1, 44, 58);
+                spr_main.drawFloat( std::abs(kwh_100km), 1, 43, 16);
             }
             else {
-                img.drawString("---", 44, 58);
+                spr_main.drawString("---", 43, 16);
             }
 
-            img.setTextFont(1);
-            img.setTextDatum( ML_DATUM );
-            img.setTextColor( TFT_WHITE );
-            img.drawString("kWh", 53, 55);
-            img.drawString("100km", 47, 65);
-            img.drawLine(49, 59, 74, 59, TFT_WHITE);
-
-
-            // *******************
-            // Battery kWh display
-            // *******************
-            img.setTextColor( TFT_WHITE );
-            img.setFreeFont( &FreeSansBold12pt7b );
-            img.setTextDatum( MR_DATUM );
-            img.drawFloat(battery_kwh, 1, 130, 58);
-
-            img.setFreeFont( &FreeSans9pt7b );
-            img.setTextFont(1);
-            img.setTextDatum( ML_DATUM );
-            img.drawString("kWh", 133, 65);
+            // TODO: kWh/100km icon
 
 
             // *******************
             // Battery kW display
             // *******************
-            img.setFreeFont( &FreeSansBold12pt7b );
-            img.setTextDatum( MR_DATUM );
+            spr_main.setTextDatum( MR_DATUM );
             if ( power > 0 ) {
                 // Charging
-                img.setTextColor( TFT_GREEN );
+                spr_main.setTextColor( TFT_GREEN, TFT_BLACK );
             }
             else {
-                img.setTextColor( TFT_WHITE );
+                spr_main.setTextColor( TFT_WHITE, TFT_BLACK );
             }
 
-            img.drawFloat( std::abs(power), 1, 130, 90 );
+            spr_main.drawFloat( std::abs(power), 1, 123, 16 );
 
-            img.setTextColor( TFT_WHITE );
-            img.setFreeFont( &FreeSans9pt7b );
-            img.setTextDatum( ML_DATUM );
-            img.drawString( "kW", 133, 90 );
+            spr_main.setTextColor( TFT_WHITE, TFT_BLACK );
+            spr_main.setTextDatum( ML_DATUM );
+            spr_main.drawString( "kW", 126, 16 );
 
 
-            img.pushSprite(0, 0);
+            // *******************
+            // Battery kWh display
+            // *******************
+            spr_main.setTextColor( TFT_WHITE, TFT_BLACK );
+            spr_main.setTextDatum( MR_DATUM );
+            spr_main.drawFloat(battery_kwh, 1, 123, 40);
+
+            spr_main.setTextDatum( ML_DATUM );
+            spr_main.drawString("kWh", 126, 40);
+
+
+            // *******************
+            // Spares
+            // *******************
+            spr_main.setTextDatum( MR_DATUM );
+            spr_main.drawString( "---", 43, 40);
+            spr_main.drawString( "---", 43, 64);
+            spr_main.drawString( "---", 123, 64);
+
+
+            // *******************
+            // Icons
+            // *******************
+            spr_icons.fillSprite( TFT_BLACK );
+            
+            // Display the icon for at least 200ms
+            if ( log_writing || millis() - log_start_time < 200 ) {
+                spr_icons.setTextDatum( TL_DATUM );
+                spr_icons.setTextColor(TFT_SKYBLUE, TFT_BLACK);
+                spr_icons.drawString("W", 0, 0);
+            }
+
+
+            // *******************
+            // Display on TFT
+            // *******************
+            spr_speed.pushSprite(0, 0);
+            spr_main.pushSprite(0, 32);
+            spr_icons.pushSprite(0, 112);
         }
 
         // Slow down the task

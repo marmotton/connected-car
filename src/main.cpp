@@ -6,10 +6,12 @@
 #include "msg_forwarder.h"
 #include "display.h"
 #include "leafCAN.h"
+#include "sdcard_logger.h"
 
 QueueHandle_t q_out = xQueueCreate(50, sizeof(Message));
 QueueHandle_t q_leafcan = xQueueCreate(10, sizeof(Message));
 QueueHandle_t q_display = xQueueCreate(10, sizeof(Message));
+QueueHandle_t q_logger = xQueueCreate(20, sizeof(Message));
 
 float some_test_value = 0;
 
@@ -24,10 +26,12 @@ void setup() {
 
     // USB serial port
     Serial.begin( SERIAL_BAUDRATE );
+    Serial.setDebugOutput( ENABLE_SERIAL_DEBUG );
 
     xTaskCreatePinnedToCore( msg_forwarder_task, "msg_forwarder_task", 2048, NULL, 5, NULL, 1);
-    xTaskCreatePinnedToCore( display_task, "display_task", 2048, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore( display_task, "display_task", 8192, NULL, 5, NULL, 1);
     xTaskCreatePinnedToCore( leafcan_task, "leafcan_task", 2048, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore( logger_task, "logger_task", 8192, NULL, 5, NULL, 1);
 }
 
 void loop() {

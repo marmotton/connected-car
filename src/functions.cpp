@@ -19,3 +19,9 @@ int twosComplementToInt(uint32_t twosComplement, uint32_t nBits) {
 
     return integer;
 }
+
+
+// Exponential smoothing
+void exp_smooth(float *out, float in, float smoothing ) {
+    *out = smoothing * *out + (1 - smoothing) * in;
+}

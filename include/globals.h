@@ -7,7 +7,7 @@ enum Message_name {
     ac_status,
     charger_status,
     car_status,
-    sd_card_status,
+    logger_status,
 
     network_status,
     network_latitude,
@@ -45,6 +45,9 @@ enum Message_status {
 
     network_connected,
     network_connected_mqtt,
+
+    logger_write_started,
+    logger_write_ended,
 };
 
 struct Message {
@@ -59,5 +62,6 @@ struct Message {
 extern QueueHandle_t q_out;
 extern QueueHandle_t q_leafcan;
 extern QueueHandle_t q_display;
+extern QueueHandle_t q_logger;
 
 #endif

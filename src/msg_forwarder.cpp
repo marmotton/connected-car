@@ -19,6 +19,7 @@ void msg_forwarder_task( void *parameter ) {
                 || received_msg.name == Message_name::battery_energy_kwh
                 || received_msg.name == Message_name::network_status
                 || received_msg.name == Message_name::power_save_mode
+                || received_msg.name == Message_name::logger_status
                 ) {
                 xQueueSendToBack(q_display, &received_msg, 0);
             }
@@ -28,6 +29,21 @@ void msg_forwarder_task( void *parameter ) {
                 || received_msg.name == Message_name::charge_request
                 ) {
                 xQueueSendToBack(q_leafcan, &received_msg, 0);
+            }
+
+            // Logger
+            if ( received_msg.name == Message_name::speed_kmh
+                || received_msg.name == Message_name::gnss_speed
+                || received_msg.name == Message_name::gnss_latitude
+                || received_msg.name == Message_name::gnss_longitude
+                || received_msg.name == Message_name::gnss_altitude
+                || received_msg.name == Message_name::network_latitude
+                || received_msg.name == Message_name::network_longitude
+                || received_msg.name == Message_name::battery_power_kw
+                || received_msg.name == Message_name::battery_energy_kwh
+                || received_msg.name == Message_name::car_status
+                ) {
+                xQueueSendToBack(q_logger, &received_msg, 0);
             }
         }
     }

@@ -59,7 +59,7 @@ void leafcan_task( void *parameter ) {
             msg_out.name = Message_name::invalid;
 
             switch ( can_msg_rx.identifier ) {
-                // Battery energy
+                // Battery energy (2Hz)
                 case 0x5BC: {
                     // Extract the 10 first bits of the message (byte[0] + 2 first bits of byte[1])
                     int gids = ( can_msg_rx.data[0] << 2 ) | ( can_msg_rx.data[1] >> 6 );
@@ -69,7 +69,7 @@ void leafcan_task( void *parameter ) {
                     break;
                 }
                 
-                // Battery power
+                // Battery power (100Hz)
                 case 0x1DB: {
                     float current = 0.5 * twosComplementToInt( ( ( can_msg_rx.data[0] << 3 ) | ( can_msg_rx.data[1] >> 5 ) ), 11 ); // 11 bits, 0.5A per LSB, 2's complement
                     float voltage = 0.5 * ( ( can_msg_rx.data[2] << 2 ) | ( can_msg_rx.data[3] >> 6 ) ); // 10 bits, 0.5V per LSB
@@ -79,7 +79,7 @@ void leafcan_task( void *parameter ) {
                     break;
                 }
 
-                // Speed (taken from motor RPM)
+                // Speed (taken from motor RPM, 100Hz)
                 case 0x1DA: {
                     float rpm = (float)twosComplementToInt( ( can_msg_rx.data[4] << 7 | can_msg_rx.data[5] >> 1 ), 15 );
                     msg_out.name = Message_name::speed_kmh;
@@ -87,7 +87,7 @@ void leafcan_task( void *parameter ) {
                     break;
                 }
 
-                // Climate control status
+                // Climate control status (10Hz)
                 case 0x54b: {
                     msg_out.name = Message_name::ac_status;
 
@@ -99,7 +99,7 @@ void leafcan_task( void *parameter ) {
                     }
                 }
 
-                // Charger state
+                // Charger state (10Hz)
                 case 0x5bf: {
                     // TODO: ability to process CAN messages with multiple information
                     // float max_amps = can_msg_rx.data[2] / 5.0;
