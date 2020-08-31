@@ -76,12 +76,8 @@ void logger_task( void *parameter ) {
 
             last_log_time = millis();
 
-            Message msg_out;
-            msg_out.name = Message_name::logger_status;
-
             if ( SD.begin(SD_CS) ) {
-                msg_out.value_status = Message_status::logger_write_started;
-                xQueueSendToBack(q_out, &msg_out, 1);
+                send_msg(Message_name::logger_status, Message_status::logger_write_started);
 
                 bool log_exists = SD.exists("/log.csv");
 
@@ -102,8 +98,7 @@ void logger_task( void *parameter ) {
 
             SD.end();
 
-            msg_out.value_status = Message_status::logger_write_ended;
-            xQueueSendToBack(q_out, &msg_out, 1);
+            send_msg(Message_name::logger_status, Message_status::logger_write_ended);
         }
 
         // Slow down the task

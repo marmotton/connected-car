@@ -9,7 +9,7 @@
 #define MOTOR_RPM_TO_KMH 0.01212
 
 // Smoothing factors for power and speed reported by the car (exponential moving average)
-#define DISPLAY_SMOOTHING 0.97
+#define DISPLAY_SMOOTHING 0.9
 #define LOG_SMOOTHING 0.95
 
 #endif

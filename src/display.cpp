@@ -35,7 +35,9 @@ void display_task( void *parameter ) {
 
     float battery_kwh = 22.87543;
     float speed = 128.721;
+    float acceleration = 0;
     float power = 78.921;
+    Message_status charger_status = Message_status::charger_idle;
     
     bool log_writing = false;
     unsigned long log_start_time = 0;
@@ -55,6 +57,10 @@ void display_task( void *parameter ) {
                     exp_smooth(&speed, received_msg.value_float, DISPLAY_SMOOTHING);
                     break;
 
+                case Message_name::acceleration_kmh_s:
+                    exp_smooth(&acceleration, received_msg.value_float, DISPLAY_SMOOTHING);
+                    break;
+
                 case Message_name::battery_power_kw:
                     exp_smooth(&power, received_msg.value_float, DISPLAY_SMOOTHING);
                     break;
@@ -67,6 +73,11 @@ void display_task( void *parameter ) {
                     else if (received_msg.value_status == Message_status::logger_write_ended) {
                         log_writing = false;
                     }
+                    break;
+
+                case Message_name::charger_status:
+                    charger_status = received_msg.value_status;
+                    break;
                 
                 default:
                     break;
@@ -85,10 +96,26 @@ void display_task( void *parameter ) {
             spr_speed.setTextColor( TFT_WHITE, TFT_BLACK );
             spr_speed.drawNumber(speed, 80, 0);
 
+
+            // *******************
+            // Acceleration display
+            // *******************
+            spr_main.fillSprite( TFT_BLACK );
+            if (acceleration >= 0) {
+                int bar_length = acceleration * 78;
+                bar_length = bar_length > 78 ? 78 : bar_length;
+                spr_main.fillRect(78, 0, bar_length + 4, 3, TFT_SKYBLUE);
+            }
+            else {
+                int bar_length = -acceleration * 78;
+                bar_length = bar_length > 78 ? 78 : bar_length;
+                spr_main.fillRect(78 - bar_length, 0, bar_length + 4, 3, TFT_SKYBLUE);
+            }
+
+
             // *******************
             // Economy display (kWh/100km)
             // *******************
-            spr_main.fillSprite( TFT_BLACK );
             spr_main.setTextDatum( MR_DATUM );
 
             // Green for charging, white for discharging
@@ -103,7 +130,7 @@ void display_task( void *parameter ) {
             // Do not compute economy for very low speeds (and avoid divide by 0)
             if ( speed > 1 ) {
                 float kwh_100km = power / speed * 100;
-                spr_main.drawFloat( std::abs(kwh_100km), 1, 43, 16);
+                spr_main.drawNumber( std::abs(kwh_100km), 43, 16);
             }
             else {
                 spr_main.drawString("---", 43, 16);
@@ -124,7 +151,14 @@ void display_task( void *parameter ) {
                 spr_main.setTextColor( TFT_WHITE, TFT_BLACK );
             }
 
-            spr_main.drawFloat( std::abs(power), 1, 123, 16 );
+            // Show decimal only while charging
+            if ( charger_status == Message_status::charger_charging ) {
+                spr_main.drawFloat( std::abs(power), 1, 123, 16 );
+            }
+            else {
+                spr_main.drawNumber( std::abs(power), 123, 16 );
+            }
+            
 
             spr_main.setTextColor( TFT_WHITE, TFT_BLACK );
             spr_main.setTextDatum( ML_DATUM );

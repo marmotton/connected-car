@@ -42,6 +42,8 @@ void leafcan_task( void *parameter ) {
         Serial.println("Error with CAN driver start.");
     }
 
+    float last_speed = 0;  // for computing acceleration
+
     for (;;) {
         // Read messages from CAN bus
         can_message_t can_msg_rx;
@@ -64,8 +66,9 @@ void leafcan_task( void *parameter ) {
                     // Extract the 10 first bits of the message (byte[0] + 2 first bits of byte[1])
                     int gids = ( can_msg_rx.data[0] << 2 ) | ( can_msg_rx.data[1] >> 6 );
 
-                    msg_out.name = Message_name::battery_energy_kwh;
-                    msg_out.value_float = (float) gids * KWH_PER_GID;
+                    float energy = (float) gids * KWH_PER_GID;
+
+                    send_msg(Message_name::battery_energy_kwh, energy);
                     break;
                 }
                 
@@ -74,62 +77,64 @@ void leafcan_task( void *parameter ) {
                     float current = 0.5 * twosComplementToInt( ( ( can_msg_rx.data[0] << 3 ) | ( can_msg_rx.data[1] >> 5 ) ), 11 ); // 11 bits, 0.5A per LSB, 2's complement
                     float voltage = 0.5 * ( ( can_msg_rx.data[2] << 2 ) | ( can_msg_rx.data[3] >> 6 ) ); // 10 bits, 0.5V per LSB
 
-                    msg_out.name = Message_name::battery_power_kw;
-                    msg_out.value_float = 0.001 * current * voltage;
+                    float power = 0.001 * current * voltage;
+
+                    send_msg(Message_name::battery_power_kw, power);
                     break;
                 }
 
                 // Speed (taken from motor RPM, 100Hz)
                 case 0x1DA: {
                     float rpm = (float)twosComplementToInt( ( can_msg_rx.data[4] << 7 | can_msg_rx.data[5] >> 1 ), 15 );
-                    msg_out.name = Message_name::speed_kmh;
-                    msg_out.value_float = rpm * MOTOR_RPM_TO_KMH;
+                    float speed = rpm * MOTOR_RPM_TO_KMH;
+
+                    float acceleration = (speed - last_speed) * 100;  // km/h / s, message frequency is 100Hz on CAN bus
+                    last_speed = speed;
+
+                    send_msg(Message_name::speed_kmh, speed);
+                    send_msg(Message_name::acceleration_kmh_s, acceleration);
                     break;
                 }
 
                 // Climate control status (10Hz)
                 case 0x54b: {
-                    msg_out.name = Message_name::ac_status;
-
                     if ( ( can_msg_rx.data[0] & 0x01 ) == 0 ) {
-                        msg_out.value_status = Message_status::ac_is_on;
+                        send_msg(Message_name::ac_status, Message_status::ac_is_on);
                     }
                     else {
-                        msg_out.value_status = Message_status::ac_is_off;
+                        send_msg(Message_name::ac_status, Message_status::ac_is_off);
                     }
                 }
 
                 // Charger state (10Hz)
                 case 0x5bf: {
-                    // TODO: ability to process CAN messages with multiple information
-                    // float max_amps = can_msg_rx.data[2] / 5.0;
+                    float max_amps = can_msg_rx.data[2] / 5.0;
 
-                    msg_out.name = Message_name::charger_status;
+                    send_msg(Message_name::charger_max_amps, max_amps);
+
                     switch ( can_msg_rx.data[4] ) {
                         case 0x28:
-                            msg_out.value_status = Message_status::charger_idle;
+                            send_msg(Message_name::charger_status, Message_status::charger_idle);
                             break;
 
                         case 0x30:
-                            msg_out.value_status = Message_status::charger_plugged_in_timer_wait;
+                            send_msg(Message_name::charger_status, Message_status::charger_plugged_in_timer_wait);
+
                             break;
 
                         case 0x60:
-                            msg_out.value_status = Message_status::charger_charging;
+                            send_msg(Message_name::charger_status, Message_status::charger_charging);
+
                             break;
 
                         case 0x40:
-                            msg_out.value_status = Message_status::charger_finished;
+                            send_msg(Message_name::charger_status, Message_status::charger_finished);
                             break;
                     }
                 }
 
                 default:
                     break;
-            }
-
-            if ( msg_out.name != Message_name::invalid ) {
-                xQueueSendToBack(q_out, &msg_out, 0);
             }
         }
 

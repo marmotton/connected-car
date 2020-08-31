@@ -20,6 +20,7 @@ void msg_forwarder_task( void *parameter ) {
                 || received_msg.name == Message_name::network_status
                 || received_msg.name == Message_name::power_save_mode
                 || received_msg.name == Message_name::logger_status
+                || received_msg.name == Message_name::charger_status
                 ) {
                 xQueueSendToBack(q_display, &received_msg, 0);
             }

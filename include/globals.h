@@ -9,6 +9,8 @@ enum Message_name {
     car_status,
     logger_status,
 
+    charger_max_amps,
+
     network_status,
     network_latitude,
     network_longitude,
@@ -21,6 +23,7 @@ enum Message_name {
     battery_power_kw,
     battery_energy_kwh,
     speed_kmh,
+    acceleration_kmh_s,
 
     ac_request,
     charge_request,
