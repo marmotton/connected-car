@@ -20,9 +20,10 @@ void setup() {
     // Enable power on the GPS and display
     pinMode(5, OUTPUT);
     digitalWrite(5, LOW);
-    // CAN transceiver in listen-only mode
+    // CAN transceiver mode
     pinMode(15, OUTPUT);
-    digitalWrite(15, HIGH);
+    //digitalWrite(15, HIGH);  // listen-only mode
+    digitalWrite(15, LOW);  // high speed (read-write) mode
 
     // USB serial port
     Serial.begin( SERIAL_BAUDRATE );

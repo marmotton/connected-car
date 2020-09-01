@@ -23,7 +23,6 @@ enum Message_name {
     battery_power_kw,
     battery_energy_kwh,
     speed_kmh,
-    acceleration_kmh_s,
 
     ac_request,
     charge_request,
@@ -40,6 +39,7 @@ enum Message_status {
     charger_idle,
     charger_plugged_in_timer_wait,
     charger_charging,
+    charger_quick_charging,
     charger_finished,
     request_charge_start,
 

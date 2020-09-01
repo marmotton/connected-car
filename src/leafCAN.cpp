@@ -42,10 +42,8 @@ void leafcan_task( void *parameter ) {
         Serial.println("Error with CAN driver start.");
     }
 
-    float last_speed = 0;  // for computing acceleration
-
     for (;;) {
-        // Read messages from CAN bus
+        // Read messages from EVCAN bus
         can_message_t can_msg_rx;
         if ( can_receive(&can_msg_rx, 2) == ESP_OK ) {
             // Output the received CAN frame to the serial port (SLCAN format)
@@ -56,9 +54,6 @@ void leafcan_task( void *parameter ) {
             }
             printf("\r");
             #endif
-
-            Message msg_out;
-            msg_out.name = Message_name::invalid;
 
             switch ( can_msg_rx.identifier ) {
                 // Battery energy (2Hz)
@@ -88,11 +83,7 @@ void leafcan_task( void *parameter ) {
                     float rpm = (float)twosComplementToInt( ( can_msg_rx.data[4] << 7 | can_msg_rx.data[5] >> 1 ), 15 );
                     float speed = rpm * MOTOR_RPM_TO_KMH;
 
-                    float acceleration = (speed - last_speed) * 100;  // km/h / s, message frequency is 100Hz on CAN bus
-                    last_speed = speed;
-
                     send_msg(Message_name::speed_kmh, speed);
-                    send_msg(Message_name::acceleration_kmh_s, acceleration);
                     break;
                 }
 
@@ -106,28 +97,40 @@ void leafcan_task( void *parameter ) {
                     }
                 }
 
-                // Charger state (10Hz)
-                case 0x5bf: {
-                    float max_amps = can_msg_rx.data[2] / 5.0;
+                // Charger state
+                case 0x390: {
+                    float max_amps = can_msg_rx.data[6] * 0.5;
 
                     send_msg(Message_name::charger_max_amps, max_amps);
 
-                    switch ( can_msg_rx.data[4] ) {
-                        case 0x28:
+                    Serial.printf("%ld 0x390: %.1fA, ", millis(), max_amps);
+                    for ( int i = 0; i < can_msg_rx.data_length_code; i++ ){
+                        Serial.printf( "%02x ", can_msg_rx.data[i] );
+                    }
+                    Serial.printf("\n");
+
+                    switch ( can_msg_rx.data[5] ) {
+                        case 0x80:
+                        case 0x82:
+                        case 0x92:
                             send_msg(Message_name::charger_status, Message_status::charger_idle);
                             break;
 
-                        case 0x30:
+                        case 0x83:
+                            send_msg(Message_name::charger_status, Message_status::charger_quick_charging);
+                            break;
+
+                        case 0x98:
                             send_msg(Message_name::charger_status, Message_status::charger_plugged_in_timer_wait);
 
                             break;
 
-                        case 0x60:
+                        case 0x88:
                             send_msg(Message_name::charger_status, Message_status::charger_charging);
 
                             break;
 
-                        case 0x40:
+                        case 0x84:
                             send_msg(Message_name::charger_status, Message_status::charger_finished);
                             break;
                     }
@@ -144,5 +147,20 @@ void leafcan_task( void *parameter ) {
             //can_message_t can_msg_tx;
             //can_transmit(&can_msg_tx, pdMS_TO_TICKS(10));
         }
+        /*
+        if ( Serial.available() > 0) {
+            int c = Serial.read();
+            if ( c == 'o') {
+                Serial.println("Opening doors...");
+                // This doesn't open the doors, but wakes up the bus
+                can_message_t can_msg_tx;
+                can_msg_tx.identifier = 0x56E;
+                can_msg_tx.flags = CAN_MSG_FLAG_NONE;
+                can_msg_tx.data_length_code = 1;
+                can_msg_tx.data[0] = 47;
+                ESP_ERROR_CHECK_WITHOUT_ABORT(can_transmit(&can_msg_tx, pdMS_TO_TICKS(100)));
+            }
+        }
+        */
     }
 }

@@ -1,7 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define ENABLE_SLCAN
+//#define ENABLE_SLCAN
 #define SERIAL_BAUDRATE 460800
 #define ENABLE_SERIAL_DEBUG true
 

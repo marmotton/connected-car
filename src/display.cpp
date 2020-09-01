@@ -35,6 +35,7 @@ void display_task( void *parameter ) {
 
     float battery_kwh = 22.87543;
     float speed = 128.721;
+    float last_speed = 0;
     float acceleration = 0;
     float power = 78.921;
     Message_status charger_status = Message_status::charger_idle;
@@ -55,10 +56,9 @@ void display_task( void *parameter ) {
 
                 case Message_name::speed_kmh:
                     exp_smooth(&speed, received_msg.value_float, DISPLAY_SMOOTHING);
-                    break;
-
-                case Message_name::acceleration_kmh_s:
-                    exp_smooth(&acceleration, received_msg.value_float, DISPLAY_SMOOTHING);
+                    // TODO: smooth acceleration
+                    acceleration = ( speed - last_speed ) * 100;  // 100Hz message --> km/h / s
+                    last_speed = speed;
                     break;
 
                 case Message_name::battery_power_kw:
@@ -180,8 +180,8 @@ void display_task( void *parameter ) {
             // Spares
             // *******************
             spr_main.setTextDatum( MR_DATUM );
-            spr_main.drawString( "---", 43, 40);
-            spr_main.drawString( "---", 43, 64);
+            spr_main.drawFloat( speed, 3, 43, 40);
+            spr_main.drawFloat( acceleration, 3, 43, 64);
             spr_main.drawString( "---", 123, 64);
 
 
