@@ -1,0 +1,16 @@
+#ifndef CONFIG_COMM_H
+#define CONFIG_COMM_H
+
+#define GSM_APN "apn.example.com"
+
+#define MQTT_BROKER "example.com"
+#define MQTT_PORT 8883
+#define MQTT_CLIENT_NAME "client1234"
+#define MQTT_USER "user1234"
+#define MQTT_PASS "pa$$word4567"
+
+#define MQTT_PREFIX "myCar/"
+#define MQTT_ONLINE_TOPIC MQTT_PREFIX "status"
+#define MQTT_CONTROL_TOPIC MQTT_PREFIX "ctrl"
+
+#endif

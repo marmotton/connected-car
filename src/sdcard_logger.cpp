@@ -22,6 +22,15 @@ void logger_task( void *parameter ) {
     float altitude = 0;
     float latitude_network = 0;
     float longitude_network = 0;
+    int gsm_day = 0;
+    int gsm_month = 0;
+    int gsm_year = 0;
+    int gsm_hours = 0;
+    int gsm_minutes = 0;
+    int gsm_seconds = 0;
+
+    Message_status car_status = Message_status::car_is_off;
+    Message_status charger_status = Message_status::charger_idle;
 
     unsigned long last_log_time = 0;
 
@@ -65,14 +74,60 @@ void logger_task( void *parameter ) {
                 case Message_name::battery_energy_kwh:
                     battery_kwh = received_msg.value_float;
                     break;
+
+                case Message_name::gsm_year:
+                    gsm_year = received_msg.value_int;
+                    break;
+                
+                case Message_name::gsm_month:
+                    gsm_month = received_msg.value_int;
+                    break;
+                
+                case Message_name::gsm_day:
+                    gsm_day = received_msg.value_int;
+                    break;
+                
+                case Message_name::gsm_hours:
+                    gsm_hours = received_msg.value_int;
+                    break;
+                
+                case Message_name::gsm_minutes:
+                    gsm_minutes = received_msg.value_int;
+                    break;
+                
+                case Message_name::gsm_seconds:
+                    gsm_seconds = received_msg.value_int;
+                    break;
+
+                case Message_name::car_status:
+                    car_status = received_msg.value_status;
+                    break;
+
+                case Message_name::charger_status:
+                    charger_status = received_msg.value_status;
+                    break;
                 
                 default:
                     break;
             }
         }
 
-        // Log every second
-        if ( millis() - last_log_time > 1000 ) {
+        // Log every 15min by default
+        int log_interval = 15*60000;
+
+        // Log more frequently when car is on or charging
+        if (car_status == Message_status::car_is_on) {
+            log_interval = 1000;
+        }
+        else if (charger_status == Message_status::charger_quick_charging) {
+            log_interval = 10000;
+        }
+        else if (charger_status == Message_status::charger_charging) {
+            log_interval = 60000;
+        }
+
+        // Log to SD-card
+        if ( millis() - last_log_time > log_interval ) {
 
             last_log_time = millis();
 
@@ -84,11 +139,12 @@ void logger_task( void *parameter ) {
                 File logfile = SD.open("/log.csv", FILE_APPEND);
 
                 if ( !log_exists ) {
-                    logfile.println("time (ms),speed (km/h),GNSS speed (km/h),latitude (deg),longitude (deg),altitude (m),network latitude (deg),network longitude (deg),battery power (kW),battery energy (kWh)");
+                    logfile.println("time (ms),GSM date,GSM time,speed (km/h),GNSS speed (km/h),latitude (deg),longitude (deg),altitude (m),network latitude (deg),network longitude (deg),battery power (kW),battery energy (kWh)");
                 }
 
-                logfile.printf("%lu,%.1f,%.1f,%.6f,%.6f,%.1f,%.6f,%.6f,%.2f,%.2f\n",
-                    millis(), speed_tacho, speed_gnss,
+                logfile.printf("%lu,%d/%d/%d,%d:%d:%d,%.1f,%.1f,%.6f,%.6f,%.1f,%.6f,%.6f,%.2f,%.2f\n",
+                    millis(), gsm_year, gsm_month, gsm_day, gsm_hours, gsm_minutes, gsm_seconds,
+                    speed_tacho, speed_gnss,
                     latitude, longitude, altitude,
                     latitude_network, longitude_network,
                     battery_kw, battery_kwh);

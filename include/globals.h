@@ -15,6 +15,13 @@ enum Message_name {
     network_latitude,
     network_longitude,
 
+    gsm_day,
+    gsm_month,
+    gsm_year,
+    gsm_hours,
+    gsm_minutes,
+    gsm_seconds,
+
     gnss_latitude,
     gnss_longitude,
     gnss_altitude,
@@ -26,26 +33,31 @@ enum Message_name {
 
     ac_request,
     charge_request,
+    update_request,
 
     power_save_mode,
 };
 
 enum Message_status {
-    ac_is_on,
-    ac_is_off,
+    invalid_status = 0,
+
+    charger_idle = 1,
+    charger_plugged_in_timer_wait = 2,
+    charger_charging = 3,
+    charger_quick_charging = 4,
+    charger_finished = 5,
+    request_charge_start = 6,
+
+    ac_is_on = 7,
+    ac_is_off = 8,
+
+    car_is_on = 9,
+    car_is_off = 10,
+
     request_ac_start,
     request_ac_stop,
 
-    charger_idle,
-    charger_plugged_in_timer_wait,
-    charger_charging,
-    charger_quick_charging,
-    charger_finished,
-    request_charge_start,
-
-    car_is_on,
-    car_is_off,
-
+    network_not_connected,
     network_connected,
     network_connected_mqtt,
 
@@ -66,5 +78,6 @@ extern QueueHandle_t q_out;
 extern QueueHandle_t q_leafcan;
 extern QueueHandle_t q_display;
 extern QueueHandle_t q_logger;
+extern QueueHandle_t q_comm_gnss;
 
 #endif

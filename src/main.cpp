@@ -7,11 +7,13 @@
 #include "display.h"
 #include "leafCAN.h"
 #include "sdcard_logger.h"
+#include "comm_gnss.h"
 
 QueueHandle_t q_out = xQueueCreate(50, sizeof(Message));
-QueueHandle_t q_leafcan = xQueueCreate(10, sizeof(Message));
-QueueHandle_t q_display = xQueueCreate(10, sizeof(Message));
-QueueHandle_t q_logger = xQueueCreate(20, sizeof(Message));
+QueueHandle_t q_leafcan = xQueueCreate(50, sizeof(Message));
+QueueHandle_t q_display = xQueueCreate(50, sizeof(Message));
+QueueHandle_t q_logger = xQueueCreate(50, sizeof(Message));
+QueueHandle_t q_comm_gnss = xQueueCreate(50, sizeof(Message));
 
 float some_test_value = 0;
 
@@ -33,6 +35,7 @@ void setup() {
     xTaskCreatePinnedToCore( display_task, "display_task", 8192, NULL, 5, NULL, 1);
     xTaskCreatePinnedToCore( leafcan_task, "leafcan_task", 2048, NULL, 5, NULL, 1);
     xTaskCreatePinnedToCore( logger_task, "logger_task", 8192, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore( comm_gnss_task, "comm_gnss_task", 8192, NULL, 5, NULL, 1);
 }
 
 void loop() {

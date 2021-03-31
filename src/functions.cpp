@@ -56,3 +56,7 @@ void send_msg(Message_name msg_name, Message_status val) {
 
     send_msg(msg_out);
 }
+
+void send_msg(Message_name msg_name) {
+    send_msg(msg_name, 0);
+}

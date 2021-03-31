@@ -43,8 +43,27 @@ void msg_forwarder_task( void *parameter ) {
                 || received_msg.name == Message_name::battery_power_kw
                 || received_msg.name == Message_name::battery_energy_kwh
                 || received_msg.name == Message_name::car_status
+                || received_msg.name == Message_name::charger_status
+                || received_msg.name == Message_name::gsm_year
+                || received_msg.name == Message_name::gsm_month
+                || received_msg.name == Message_name::gsm_day
+                || received_msg.name == Message_name::gsm_hours
+                || received_msg.name == Message_name::gsm_minutes
+                || received_msg.name == Message_name::gsm_seconds
                 ) {
                 xQueueSendToBack(q_logger, &received_msg, 0);
+            }
+
+            // MQTT
+            if ( received_msg.name == Message_name::battery_power_kw
+                || received_msg.name == Message_name::battery_energy_kwh
+                || received_msg.name == Message_name::car_status
+                || received_msg.name == Message_name::ac_status
+                || received_msg.name == Message_name::charger_status
+                || received_msg.name == Message_name::charger_max_amps
+                || received_msg.name == Message_name::update_request
+                ) {
+                xQueueSendToBack(q_comm_gnss, &received_msg, 0);
             }
         }
     }

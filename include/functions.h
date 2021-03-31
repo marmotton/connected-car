@@ -13,5 +13,6 @@ void send_msg(Message msg_out);
 void send_msg(Message_name msg_name, float val);
 void send_msg(Message_name msg_name, int val);
 void send_msg(Message_name msg_name, Message_status val);
+void send_msg(Message_name msg_name);
 
 #endif

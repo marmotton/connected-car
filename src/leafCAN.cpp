@@ -42,6 +42,10 @@ void leafcan_task( void *parameter ) {
         Serial.println("Error with CAN driver start.");
     }
 
+    // Variables used to know if the car is on or off
+    unsigned long last_speed_update = 0;
+    unsigned long last_car_on_off_update = 0;
+
     for (;;) {
         // Read messages from EVCAN bus
         can_message_t can_msg_rx;
@@ -82,6 +86,8 @@ void leafcan_task( void *parameter ) {
                 case 0x1DA: {
                     float rpm = (float)twosComplementToInt( ( can_msg_rx.data[4] << 7 | can_msg_rx.data[5] >> 1 ), 15 );
                     float speed = rpm * MOTOR_RPM_TO_KMH;
+
+                    last_speed_update = millis();
 
                     send_msg(Message_name::speed_kmh, speed);
                     break;
@@ -139,6 +145,19 @@ void leafcan_task( void *parameter ) {
                 default:
                     break;
             }
+        }
+
+        // Update car status (on/off) every 200ms
+        if (millis() - last_car_on_off_update > 200) {
+            // Speed (from motor RPM) is updated at 100Hz when the car is on
+            if (millis() - last_speed_update < 100) {
+                send_msg(Message_name::car_status, Message_status::car_is_on);
+            }
+            else {
+                send_msg(Message_name::car_status, Message_status::car_is_off);
+            }
+
+            last_car_on_off_update = millis();
         }
 
         // Write messages to CAN bus
