@@ -51,12 +51,12 @@ void modemInit(TinyGsm &modem) {
 }
 
 void comm_gnss_task( void *parameter ) {
-    StreamDebugger debugger(Serial1, Serial);
-    TinyGsm modem(debugger);
+    //StreamDebugger debugger(Serial1, Serial);
+    TinyGsm modem(Serial1);
     TinyGsmClientSecure client(modem);
     PubSubClient mqtt(client);
 
-    Serial1.begin(115200, SERIAL_8N1, 26, 25);
+    Serial1.begin(115200, SERIAL_8N1, 34, 33);
 
     mqtt.setServer(MQTT_BROKER, MQTT_PORT);
     mqtt.setCallback(mqttCallback);
@@ -69,6 +69,8 @@ void comm_gnss_task( void *parameter ) {
     float gnss_longitude = 0;
     float gnss_altitude = 0;
     float gnss_speed = 0;
+    float pressure_altitude = 0;
+    float pcb_temperature = 0;
     Message_status ac_status = Message_status::invalid_status;
     Message_status charger_status = Message_status::invalid_status;
     Message_status car_status = Message_status::invalid_status;
@@ -145,6 +147,14 @@ void comm_gnss_task( void *parameter ) {
                     updateRequestFlag = true;
                     break;
 
+                case Message_name::pcb_temperature:
+                    pcb_temperature = received_msg.value_float;
+                    break;
+
+                case Message_name::pressure_altitude:
+                    pressure_altitude = received_msg.value_float;
+                    break;
+
                 default:
                     break;
             }
@@ -211,6 +221,9 @@ void comm_gnss_task( void *parameter ) {
             mqtt.publish(MQTT_PREFIX "batteryKWH", String(battery_energy_kwh, 1).c_str());
             mqtt.publish(MQTT_PREFIX "batteryKW", String(battery_power_kw, 1).c_str());
             mqtt.publish(MQTT_PREFIX "chargerMaxAmps", String(charger_max_amps, 1).c_str());
+
+            mqtt.publish(MQTT_PREFIX "altitude", String(pressure_altitude, 1).c_str());
+            mqtt.publish(MQTT_PREFIX "pcbTemperature", String(pcb_temperature, 1).c_str());
 
             // Status: send the integer value of the Message_status enum
             mqtt.publish(MQTT_PREFIX "acStatus", String(ac_status).c_str());

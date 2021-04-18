@@ -8,6 +8,7 @@
 #include "leafCAN.h"
 #include "sdcard_logger.h"
 #include "comm_gnss.h"
+#include "pressure.h"
 
 QueueHandle_t q_out = xQueueCreate(50, sizeof(Message));
 QueueHandle_t q_leafcan = xQueueCreate(50, sizeof(Message));
@@ -32,10 +33,11 @@ void setup() {
     Serial.setDebugOutput( ENABLE_SERIAL_DEBUG );
 
     xTaskCreatePinnedToCore( msg_forwarder_task, "msg_forwarder_task", 2048, NULL, 5, NULL, 1);
-    xTaskCreatePinnedToCore( display_task, "display_task", 8192, NULL, 5, NULL, 1);
-    xTaskCreatePinnedToCore( leafcan_task, "leafcan_task", 2048, NULL, 5, NULL, 1);
-    xTaskCreatePinnedToCore( logger_task, "logger_task", 8192, NULL, 5, NULL, 1);
+    // xTaskCreatePinnedToCore( display_task, "display_task", 8192, NULL, 5, NULL, 1);
+    // xTaskCreatePinnedToCore( leafcan_task, "leafcan_task", 2048, NULL, 5, NULL, 1);
+    // xTaskCreatePinnedToCore( logger_task, "logger_task", 8192, NULL, 5, NULL, 1);
     xTaskCreatePinnedToCore( comm_gnss_task, "comm_gnss_task", 8192, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore( pressure_task, "pressure_task", 2048, NULL, 5, NULL, 1);
 }
 
 void loop() {

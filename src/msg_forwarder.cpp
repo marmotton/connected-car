@@ -50,6 +50,9 @@ void msg_forwarder_task( void *parameter ) {
                 || received_msg.name == Message_name::gsm_hours
                 || received_msg.name == Message_name::gsm_minutes
                 || received_msg.name == Message_name::gsm_seconds
+                || received_msg.name == Message_name::pcb_temperature
+                || received_msg.name == Message_name::pressure
+                || received_msg.name == Message_name::pressure_altitude
                 ) {
                 xQueueSendToBack(q_logger, &received_msg, 0);
             }
@@ -62,6 +65,8 @@ void msg_forwarder_task( void *parameter ) {
                 || received_msg.name == Message_name::charger_status
                 || received_msg.name == Message_name::charger_max_amps
                 || received_msg.name == Message_name::update_request
+                || received_msg.name == Message_name::pressure_altitude
+                || received_msg.name == Message_name::pcb_temperature
                 ) {
                 xQueueSendToBack(q_comm_gnss, &received_msg, 0);
             }

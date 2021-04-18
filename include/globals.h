@@ -36,6 +36,10 @@ enum Message_name {
     update_request,
 
     power_save_mode,
+
+    pressure,
+    pcb_temperature,
+    pressure_altitude,
 };
 
 enum Message_status {
