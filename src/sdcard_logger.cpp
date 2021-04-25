@@ -35,6 +35,8 @@ void logger_task( void *parameter ) {
     unsigned long last_log_time = 0;
 
     for(;;) {
+        // UBaseType_t highWatermark = uxTaskGetStackHighWaterMark(NULL);
+        // printf("Logger task high watermark: %d\n", highWatermark);
         // Empty the queue and update local variables
         Message received_msg;
         while ( xQueueReceive(q_logger, &received_msg, 0 ) == pdTRUE ) {
@@ -113,21 +115,21 @@ void logger_task( void *parameter ) {
         }
 
         // Log every 15min by default
-        int log_interval = 15*60000;
+        int log_interval_s = 15*60;
 
         // Log more frequently when car is on or charging
         if (car_status == Message_status::car_is_on) {
-            log_interval = 1000;
+            log_interval_s = 1;
         }
         else if (charger_status == Message_status::charger_quick_charging) {
-            log_interval = 10000;
+            log_interval_s = 10;
         }
         else if (charger_status == Message_status::charger_charging) {
-            log_interval = 60000;
+            log_interval_s = 60;
         }
 
         // Log to SD-card
-        if ( millis() - last_log_time > log_interval ) {
+        if ( millis() - last_log_time > log_interval_s * 1000 ) {
 
             last_log_time = millis();
 
@@ -142,7 +144,7 @@ void logger_task( void *parameter ) {
                     logfile.println("time (ms),GSM date,GSM time,speed (km/h),GNSS speed (km/h),latitude (deg),longitude (deg),altitude (m),network latitude (deg),network longitude (deg),battery power (kW),battery energy (kWh)");
                 }
 
-                logfile.printf("%lu,%d/%d/%d,%d:%d:%d,%.1f,%.1f,%.6f,%.6f,%.1f,%.6f,%.6f,%.2f,%.2f\n",
+                logfile.printf("%lu,%02d/%02d/%02d,%02d:%02d:%02d,%.1f,%.1f,%.6f,%.6f,%.1f,%.6f,%.6f,%.2f,%.2f\n",
                     millis(), gsm_year, gsm_month, gsm_day, gsm_hours, gsm_minutes, gsm_seconds,
                     speed_tacho, speed_gnss,
                     latitude, longitude, altitude,

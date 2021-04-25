@@ -26,6 +26,15 @@ void mqttCallback(char* topic, byte* payload, unsigned int len) {
         else if (memcmp(payload, "start_charge", 12) == 0) {
             send_msg(Message_name::charge_request, Message_status::request_charge_start);
         }
+        else if (memcmp(payload, "lock_doors", 10) == 0) {
+            send_msg(Message_name::doors_request, Message_status::request_doors_lock);
+        }
+        else if (memcmp(payload, "unlock_doors", 12) == 0) {
+            send_msg(Message_name::doors_request, Message_status::request_doors_unlock);
+        }
+        else if (memcmp(payload, "toggle_slcan", 12) == 0) {
+            send_msg(Message_name::toggle_slcan, Message_status::no_status);
+        }
     }
 }
 
@@ -90,6 +99,8 @@ void comm_gnss_task( void *parameter ) {
     boolean updateRequestFlag = false;
 
     for(;;) {
+        // UBaseType_t highWatermark = uxTaskGetStackHighWaterMark(NULL);
+        // printf("Comm task high watermark: %d\n", highWatermark);
         // Make sure we stay connected
         if (!mqtt.connected()) {
             // Reconnect every 10 seconds
@@ -164,10 +175,7 @@ void comm_gnss_task( void *parameter ) {
         if (millis() - lastGNSSUpdate > 500) {
             lastGNSSUpdate = millis();
 
-            // TODO: Check units, datasheet says km/h, TinyGSM says knots
-            float speed_knots = 0;
-            modem.getGPS(&gnss_latitude, &gnss_longitude, &speed_knots, &gnss_altitude, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-            gnss_speed = speed_knots * 1.852;
+            modem.getGPS(&gnss_latitude, &gnss_longitude, &gnss_speed, &gnss_altitude, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
             send_msg(Message_name::gnss_latitude, gnss_latitude);
             send_msg(Message_name::gnss_longitude, gnss_longitude);
@@ -186,7 +194,7 @@ void comm_gnss_task( void *parameter ) {
             gsm_day = gsm_date_time.substring(6, 8).toInt();
             gsm_hours = gsm_date_time.substring(9, 11).toInt();
             gsm_minutes = gsm_date_time.substring(12, 14).toInt();
-            gsm_seconds = gsm_date_time.substring(16, 18).toInt();
+            gsm_seconds = gsm_date_time.substring(15, 17).toInt();
 
             send_msg(Message_name::gsm_year, gsm_year);
             send_msg(Message_name::gsm_month, gsm_month);
@@ -198,20 +206,20 @@ void comm_gnss_task( void *parameter ) {
 
         // Publish messages on MQTT
         // Default once an hour
-        int publish_interval = 60*60000;
+        int publish_interval_s = 3600;
 
         // Publish more frequently when charging or when car is on
         if (charger_status == Message_status::charger_quick_charging) {
-            publish_interval = 10000;
+            publish_interval_s = 10;
         }
         else if (charger_status == Message_status::charger_charging) {
-            publish_interval = 10*60000;
+            publish_interval_s = 600;
         }
         else if (car_status == Message_status::car_is_on) {
-            publish_interval = 60000;
+            publish_interval_s = 60;
         }
 
-        if (millis() - lastMqttUpdate > publish_interval || updateRequestFlag) {
+        if (millis() - lastMqttUpdate > publish_interval_s * 1000 || updateRequestFlag) {
             updateRequestFlag = false;
             lastMqttUpdate = millis();
 
@@ -231,5 +239,5 @@ void comm_gnss_task( void *parameter ) {
         }
         
         delay(10);
-    }
+        }
 }

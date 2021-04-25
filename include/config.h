@@ -1,7 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-//#define ENABLE_SLCAN
 #define SERIAL_BAUDRATE 460800
 #define ENABLE_SERIAL_DEBUG true
 

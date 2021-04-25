@@ -46,6 +46,8 @@ void display_task( void *parameter ) {
     int last_display_update = 0;
 
     for (;;) {
+        // UBaseType_t highWatermark = uxTaskGetStackHighWaterMark(NULL);
+        // printf("Display task high watermark: %d\n", highWatermark);
         // Empty the queue and update local variables
         Message received_msg;
         while ( xQueueReceive(q_display, &received_msg, 0 ) == pdTRUE ) {

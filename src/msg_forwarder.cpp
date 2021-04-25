@@ -10,6 +10,9 @@ and forwards them to all the other tasks that need them.
 
 void msg_forwarder_task( void *parameter ) {
     for (;;) {
+        // UBaseType_t highWatermark = uxTaskGetStackHighWaterMark(NULL);
+        // printf("Msg forwarder task high watermark: %d\n", highWatermark);
+        
         Message received_msg;
 
         if ( xQueueReceive(q_out, &received_msg, 5 / portTICK_PERIOD_MS) == pdTRUE ) {
@@ -28,6 +31,8 @@ void msg_forwarder_task( void *parameter ) {
             // Leaf CAN
             if ( received_msg.name == Message_name::ac_request
                 || received_msg.name == Message_name::charge_request
+                || received_msg.name == Message_name::doors_request
+                || received_msg.name == Message_name::toggle_slcan
                 ) {
                 xQueueSendToBack(q_leafcan, &received_msg, 0);
             }

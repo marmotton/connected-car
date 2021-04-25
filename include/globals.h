@@ -34,12 +34,15 @@ enum Message_name {
     ac_request,
     charge_request,
     update_request,
+    doors_request,
 
     power_save_mode,
 
     pressure,
     pcb_temperature,
     pressure_altitude,
+
+    toggle_slcan,
 };
 
 enum Message_status {
@@ -61,12 +64,17 @@ enum Message_status {
     request_ac_start,
     request_ac_stop,
 
+    request_doors_lock,
+    request_doors_unlock,
+
     network_not_connected,
     network_connected,
     network_connected_mqtt,
 
     logger_write_started,
     logger_write_ended,
+
+    no_status,
 };
 
 struct Message {

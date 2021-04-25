@@ -5,6 +5,8 @@
 #include <Wire.h>
 #include <math.h>
 
+// Using a Goertek SPL06-007 pressure and temperature sensor on i2c
+
 #define PRESSURE_SLAVE_ADDR 0x77
 
 uint8_t write_register(uint8_t addr, uint8_t val) {
@@ -110,6 +112,9 @@ void pressure_task( void *parameter ) {
     write_register(0x08, 0x07); // Continous pressure and temperature measurement
 
     for (;;) {
+        // UBaseType_t highWatermark = uxTaskGetStackHighWaterMark(NULL);
+        // printf("Pressure task high watermark: %d\n", highWatermark);
+
         // Check if new measurements are available
         uint8_t meas_cfg = read_register(0x08);
 
